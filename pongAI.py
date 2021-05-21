@@ -9,11 +9,18 @@
  Based paddle on this
 """
 
+
 # %%
 import heapq
 import pygame
 import random
 from pygame.locals import *
+import numpy as np
+#import gym
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Activation, Flatten
+from tensorflow.keras.optimizers import Adam
+
 
 # Define some colors
 BLACK = (0, 0, 0)
@@ -60,6 +67,10 @@ class Paddle:
         self.control = control
         self.moveVel = 8
         self.calcDelay = 0
+
+    #_________________________
+    # add reset paddle funciton
+    #___________________________
 
     def movePaddle(self, balls):    #AI Handling of the ball movement
 
@@ -144,6 +155,11 @@ class Paddle:
 
 class Ball:
     # initialize balls in the center
+    #_________________________________________________
+    #add reset ball function
+    #_______________________________________________
+
+
     def __init__(self, id):
         horz = random.randrange(2, 5)
         vert = random.randrange(1, 3)
@@ -200,6 +216,11 @@ class Ball:
             self.arrivalT = [bounceTime, "L"]
         #print(f"Estimated Arrival Time: {round(self.arrivalT[0])}")
 
+
+class Draw:
+
+
+
 # define event handlers
 def init():
     # these are floats
@@ -236,11 +257,12 @@ def keyup(event):
             if (event.key in (K_UP, K_DOWN)):
                 paddle.change_y = 0
 
-
+# %%
 def main():
     """
     This is our main program.
     """
+    #add reset funcitons for training
     pygame.init()
     global l_score, r_score, ball_num, total_balls, balls, paddles, paddle1_vel, paddle1, paddle2, spawnDelay, spawned_balls
     # Set the height and width of the screen
@@ -382,3 +404,4 @@ def main():
  
 if __name__ == "__main__":
     main()
+# %%
