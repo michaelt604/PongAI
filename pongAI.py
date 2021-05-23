@@ -53,6 +53,9 @@ paddle2 = 0
 
 averageFps = 60.0
 
+training = False
+
+
 class Paddle:
     """
     Class to keep track of a ball's location and vector.
@@ -217,21 +220,62 @@ class Ball:
         #print(f"Estimated Arrival Time: {round(self.arrivalT[0])}")
 
 
-class Draw:
+class DrawEnv:
+    #if training mode is off, will display game
+
+    def __init__(self):     
+        #Draw background
+
+        self.size = [SCREEN_WIDTH, SCREEN_HEIGHT]
+        self.screen = pygame.display.set_mode(self.size)
+        self.myfont = pygame.font.SysFont("Comic Sans MS", 20)
+        
+
+    def drawBackground(self):      
+        self.screen.fill(BLACK)
+        pygame.draw.line(self.screen, WHITE, [SCREEN_WIDTH / 2, 0], [SCREEN_WIDTH / 2, SCREEN_HEIGHT], 1)
+        pygame.draw.line(self.screen, WHITE, [PAD_WIDTH, 0], [PAD_WIDTH, SCREEN_HEIGHT], 1)
+        pygame.draw.line(self.screen, WHITE, [SCREEN_WIDTH - PAD_WIDTH, 0], [SCREEN_WIDTH - PAD_WIDTH, SCREEN_HEIGHT], 1)
+        pygame.draw.circle(self.screen, WHITE, [SCREEN_WIDTH//2, SCREEN_HEIGHT//2], 70, 1)
+        pygame.display.set_caption("Bouncing Balls")
+
+    def drawPaddles(self):
+        #Draw the paddles  if not in training mode
+        if len(paddles) != 0: 
+            for paddle in paddles:
+                pygame.draw.polygon(self.screen, paddle.colour, [[paddle.x - HALF_PAD_WIDTH, paddle.y - HALF_PAD_HEIGHT], [paddle.x - HALF_PAD_WIDTH, paddle.y + HALF_PAD_HEIGHT], [paddle.x + HALF_PAD_WIDTH, paddle.y + HALF_PAD_HEIGHT], [paddle.x + HALF_PAD_WIDTH, paddle.y - HALF_PAD_HEIGHT]], 0)
+   
+    def drawBalls(self):
+         # draw balls if not in training
+        if len(balls) != 0:
+            for pongball in balls:
+                pygame.draw.circle(self.screen, pongball.colour, pongball.ball_pos, 20, 0)
+    
+    def updateScore(self):
+        #Update left score
+        label1 = self.myfont.render("Score "+str(l_score), 1, (255, 255, 0))
+        self.screen.blit(label1, (50, 20))
+    
+        #Update right score
+        label2 = self.myfont.render("Score "+str(r_score), 1, (255, 255, 0))
+        self.screen.blit(label2, (470, 20))
+        print(r_score)
+
 
 
 
 # define event handlers
 def init():
     # these are floats
-    
     global l_score, r_score, paddle1_pos
     global score1, score2, total_balls, balls, ball_num   # these are ints    
-
+    global training     #bool
+    
     l_score = 0
     r_score = 0
     total_balls = 6  # <<<<<<<<<<<<<<  HOW YOU CHNAGE TOTAL NUMBER OF BALLS
     balls = []
+    training = True #<<<<<<<<<<<<<<< HOW TO CHNAGE TRAINING MODE
 
 # keydown handler
 def keydown(event):
@@ -262,15 +306,17 @@ def main():
     """
     This is our main program.
     """
-    #add reset funcitons for training
+
+    global l_score, r_score, ball_num, total_balls, balls, paddles, paddle1_vel, paddle1, paddle2, spawnDelay, spawned_balls,training
+    
+    #initilize game
     pygame.init()
-    global l_score, r_score, ball_num, total_balls, balls, paddles, paddle1_vel, paddle1, paddle2, spawnDelay, spawned_balls
-    # Set the height and width of the screen
+    #if not in training mode, show game
+    
+    gameEnv= DrawEnv()
+    
     init()
-    size = [SCREEN_WIDTH, SCREEN_HEIGHT]
-    screen = pygame.display.set_mode(size)
- 
-    pygame.display.set_caption("Bouncing Balls")
+
 
     # Loop until the user clicks the close button.
     done = False
@@ -316,21 +362,12 @@ def main():
         paddles[0].movePaddle(prioBallsL)
         paddles[1].movePaddle(prioBallsR)
 
-        # --- Drawing - Set the screen background
-        screen.fill(BLACK)
-        pygame.draw.line(screen, WHITE, [SCREEN_WIDTH / 2, 0], [SCREEN_WIDTH / 2, SCREEN_HEIGHT], 1)
-        pygame.draw.line(screen, WHITE, [PAD_WIDTH, 0], [PAD_WIDTH, SCREEN_HEIGHT], 1)
-        pygame.draw.line(screen, WHITE, [SCREEN_WIDTH - PAD_WIDTH, 0], [SCREEN_WIDTH - PAD_WIDTH, SCREEN_HEIGHT], 1)
-        pygame.draw.circle(screen, WHITE, [SCREEN_WIDTH//2, SCREEN_HEIGHT//2], 70, 1)
-        
-
-        # draw balls 
-        for pongball in balls:
-            pygame.draw.circle(screen, pongball.colour, pongball.ball_pos, 20, 0)
-
-        #Draw the paddles    
-        for paddle in paddles:
-            pygame.draw.polygon(screen, paddle.colour, [[paddle.x - HALF_PAD_WIDTH, paddle.y - HALF_PAD_HEIGHT], [paddle.x - HALF_PAD_WIDTH, paddle.y + HALF_PAD_HEIGHT], [paddle.x + HALF_PAD_WIDTH, paddle.y + HALF_PAD_HEIGHT], [paddle.x + HALF_PAD_WIDTH, paddle.y - HALF_PAD_HEIGHT]], 0)
+        #drawww/update gamevisuals        
+        if not training:
+            gameEnv.drawBackground()
+            gameEnv.drawPaddles()
+            gameEnv.drawBalls()
+            
 
 
         # ball collision check on top and bottom walls
@@ -378,13 +415,7 @@ def main():
             spawned_balls = 0
 
         # update scores
-        myfont1 = pygame.font.SysFont("Comic Sans MS", 20)
-        label1 = myfont1.render("Score "+str(l_score), 1, (255, 255, 0))
-        screen.blit(label1, (50, 20))
-
-        myfont2 = pygame.font.SysFont("Comic Sans MS", 20)
-        label2 = myfont2.render("Score "+str(r_score), 1, (255, 255, 0))
-        screen.blit(label2, (470, 20))
+        gameEnv.updateScore()
 
         # --- Wrap-up :: Limit to 60 frames per second :: Event Processing --- 
         for event in pygame.event.get():
@@ -399,8 +430,9 @@ def main():
         pygame.display.flip()
         pygame.display.set_caption("fps: " + str(round(clock.get_fps())))
         averageFps = clock.get_fps()
-    # Close everything down
-    pygame.quit()
+    # Close everything down if visuals show
+    if not training:
+        pygame.quit()
  
 if __name__ == "__main__":
     main()
