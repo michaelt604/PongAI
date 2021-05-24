@@ -219,19 +219,18 @@ class Ball:
             self.arrivalT = [bounceTime, "L"]
         #print(f"Estimated Arrival Time: {round(self.arrivalT[0])}")
 
-
+#%%
 class DrawEnv:
     #if training mode is off, will display game
 
     def __init__(self):     
-        #Draw background
 
         self.size = [SCREEN_WIDTH, SCREEN_HEIGHT]
-        self.screen = pygame.display.set_mode(self.size)
         self.myfont = pygame.font.SysFont("Comic Sans MS", 20)
         
-
+    #draw background
     def drawBackground(self):      
+        self.screen = pygame.display.set_mode(self.size)
         self.screen.fill(BLACK)
         pygame.draw.line(self.screen, WHITE, [SCREEN_WIDTH / 2, 0], [SCREEN_WIDTH / 2, SCREEN_HEIGHT], 1)
         pygame.draw.line(self.screen, WHITE, [PAD_WIDTH, 0], [PAD_WIDTH, SCREEN_HEIGHT], 1)
@@ -240,13 +239,13 @@ class DrawEnv:
         pygame.display.set_caption("Bouncing Balls")
 
     def drawPaddles(self):
-        #Draw the paddles  if not in training mode
+        #Draw the paddles if they exist
         if len(paddles) != 0: 
             for paddle in paddles:
                 pygame.draw.polygon(self.screen, paddle.colour, [[paddle.x - HALF_PAD_WIDTH, paddle.y - HALF_PAD_HEIGHT], [paddle.x - HALF_PAD_WIDTH, paddle.y + HALF_PAD_HEIGHT], [paddle.x + HALF_PAD_WIDTH, paddle.y + HALF_PAD_HEIGHT], [paddle.x + HALF_PAD_WIDTH, paddle.y - HALF_PAD_HEIGHT]], 0)
    
     def drawBalls(self):
-         # draw balls if not in training
+         #if balls exist, draw them
         if len(balls) != 0:
             for pongball in balls:
                 pygame.draw.circle(self.screen, pongball.colour, pongball.ball_pos, 20, 0)
@@ -259,24 +258,12 @@ class DrawEnv:
         #Update right score
         label2 = self.myfont.render("Score "+str(r_score), 1, (255, 255, 0))
         self.screen.blit(label2, (470, 20))
-        print(r_score)
-
-
-
-
-# define event handlers
-def init():
-    # these are floats
-    global l_score, r_score, paddle1_pos
-    global score1, score2, total_balls, balls, ball_num   # these are ints    
-    global training     #bool
+        
     
-    l_score = 0
-    r_score = 0
-    total_balls = 6  # <<<<<<<<<<<<<<  HOW YOU CHNAGE TOTAL NUMBER OF BALLS
-    balls = []
-    training = True #<<<<<<<<<<<<<<< HOW TO CHNAGE TRAINING MODE
-
+    def showFps(self,fps):
+        pygame.display.flip()
+        pygame.display.set_caption("fps: " + str(fps))
+        
 # keydown handler
 def keydown(event):
     for paddle in paddles:
@@ -302,6 +289,19 @@ def keyup(event):
                 paddle.change_y = 0
 
 # %%
+# define event handlers
+def init():
+    # these are floats
+    global l_score, r_score, paddle1_pos
+    global score1, score2, total_balls, balls, ball_num   # these are ints    
+    global training     #bool
+    
+    l_score = 0
+    r_score = 0
+    total_balls = 6  # <<<<<<<<<<<<<<  HOW YOU CHNAGE TOTAL NUMBER OF BALLS
+    balls = []
+    training = False #<<<<<<<<<<<<<<< HOW TO CHNAGE TRAINING MODE
+
 def main():
     """
     This is our main program.
@@ -311,12 +311,11 @@ def main():
     
     #initilize game
     pygame.init()
+    
     #if not in training mode, show game
-    
-    gameEnv= DrawEnv()
-    
+    if not training:
+        gameEnv= DrawEnv()
     init()
-
 
     # Loop until the user clicks the close button.
     done = False
@@ -359,6 +358,7 @@ def main():
         prioBallsR = prioList("R", balls) # Prioity list for right paddle
         prioBallsL = prioList("L", balls) # and left
 
+        #prio list for AI
         paddles[0].movePaddle(prioBallsL)
         paddles[1].movePaddle(prioBallsR)
 
@@ -378,7 +378,6 @@ def main():
                 pongBall.ball_vel[1] = -pongBall.ball_vel[1]
         
         # ball collison check on gutters or paddles
-        r_goal = False
         for pongball in balls:
             leftSide = round(pongball.ball_pos[0]) <= BALL_RADIUS + PAD_WIDTH and round(pongball.ball_pos[1]) in range(paddles[0].y - HALF_PAD_HEIGHT, paddles[0].y + HALF_PAD_HEIGHT, 1)
             rightSide = round(pongball.ball_pos[0]) >=SCREEN_WIDTH + 1 - BALL_RADIUS - PAD_WIDTH and round(pongball.ball_pos[1]) in range(paddles[1].y - HALF_PAD_HEIGHT, paddles[1].y + HALF_PAD_HEIGHT, 1)
@@ -401,21 +400,19 @@ def main():
 
             if (score):
                 ball_num -= 1
-                r_goal = True
                 balls.remove(pongball)
                 #print(f"FinalPos: {pongball.ball_pos}, CalcFinalPos: {pongball.final_pos}")
             
             pongball.bouncePosition()   #Recalculate every frame
-
-            
  
         # If no more balls in play, reset game by remaking total number of balls
         if ball_num == 0:
             ball_num = 0
             spawned_balls = 0
 
-        # update scores
-        gameEnv.updateScore()
+        # shpw updated scores
+        if not training:
+            gameEnv.updateScore()
 
         # --- Wrap-up :: Limit to 60 frames per second :: Event Processing --- 
         for event in pygame.event.get():
@@ -427,12 +424,14 @@ def main():
                 done = True
     
         # Go ahead and update the screen with what we've drawn.
-        pygame.display.flip()
-        pygame.display.set_caption("fps: " + str(round(clock.get_fps())))
-        averageFps = clock.get_fps()
+        if not training:
+            gameEnv.showFps(round(clock.get_fps()))   #show fps
+        
+        # do we need this ?
+        #averageFps = clock.get_fps()
+
     # Close everything down if visuals show
-    if not training:
-        pygame.quit()
+    pygame.quit()
  
 if __name__ == "__main__":
     main()
